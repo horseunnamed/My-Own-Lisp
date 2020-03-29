@@ -1,0 +1,1 @@
+ghc main.hs -odir build -hidir build 
