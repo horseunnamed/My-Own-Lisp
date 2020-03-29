@@ -2,7 +2,8 @@ module LispData where
 
 import Data.Array
 
-data LispVal = Atom String
+data LispVal 
+    = Atom String
     | List [LispVal]
     | DottedList [LispVal] LispVal
     | Vector (Array Int LispVal)
@@ -12,7 +13,7 @@ data LispVal = Atom String
     | Char Char
     deriving Show
 
-data LispNumber =
-    Int Integer
+data LispNumber 
+    = Int Integer
     | Real Double
     deriving Show

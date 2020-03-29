@@ -137,7 +137,7 @@ parseExpr =
     <|> parseAnyList
     <|> parseVector
 
-readExpr :: String -> String
+readExpr :: String -> LispVal
 readExpr input = case P.parse parseExpr "lisp" input of
-    Left err -> "No match: " ++ show err
-    Right val -> "Found value: " ++ show val
+    Left err -> LispData.String $ "No match: " ++ show err
+    Right val -> val

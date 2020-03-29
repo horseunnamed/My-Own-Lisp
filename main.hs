@@ -4,8 +4,10 @@ import System.Environment
 import Data.List
 
 import LispParser
+import LispEvaluator
 
 main :: IO ()
 main = do
-    (expr:_) <- getArgs
-    putStrLn (readExpr expr)
+    parsed <- readExpr . head <$> getArgs
+    putStrLn $ "Parsing result: " ++ (show parsed)
+    putStrLn $ "Eval result: " ++ (show $ (eval parsed))
