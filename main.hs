@@ -5,9 +5,10 @@ import Data.List
 
 import LispParser
 import LispEvaluator
+import LispTypes
 
 main :: IO ()
 main = do
     parsed <- readExpr . head <$> getArgs
-    putStrLn $ "Parsing result: " ++ (show parsed)
-    putStrLn $ "Eval result: " ++ (show $ (eval parsed))
+    let evaled = show <$> (parsed >>= eval)
+    putStrLn $ extractValue $ trapError evaled

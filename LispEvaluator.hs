@@ -1,17 +1,24 @@
 module LispEvaluator where
 
-import LispData
+import Control.Monad.Except
 
-eval :: LispVal -> LispVal
-eval val@(String _) = val
-eval val@(Number _) = val
-eval val@(Bool _) = val
-eval (List (Atom func : args)) = apply func $ map eval args
+import LispTypes
 
-apply :: String -> [LispVal] -> LispVal
-apply func args = maybe (Bool False) ($ args) (lookup func primitives)
+eval :: LispVal -> ThrowsError LispVal
+eval val@(String _) = return val
+eval val@(Number _) = return val
+eval val@(Bool _) = return val
+eval (List [Atom "quote", val]) = return val
+eval (List (Atom func : args)) = mapM eval args >>= apply func
+eval badForm = throwError $ BadSpecialForm "Unrecognized special form" badForm
 
-primitives :: [(String, [LispVal] -> LispVal)]
+apply :: String -> [LispVal] -> ThrowsError LispVal
+apply func args = maybe 
+    (throwError $ NotFunction "Unrecognized primitive function args" func) 
+    ($ args) 
+    (lookup func primitives)
+
+primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -24,23 +31,24 @@ primitives = [("+", numericBinop (+)),
               ("bool?", unaryOp boolp),
               ("list?", unaryOp listp)]
 
-numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
-numericBinop op params =
-    Number
-    $ Int
-    $ foldl1 op
-    $ map unpackNum params
+numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
+numericBinop op [] = throwError $ NumArgs 2 []
+numericBinop op singleVal@[_] = throwError $ NumArgs 2 singleVal
+numericBinop op params = mapM unpackNum params >>= (return . Number . Int . foldl1 op)
 
-unpackNum :: LispVal -> Integer
-unpackNum (Number (Int n)) = n
-unpackNum (Number (Real n)) = round n
-unpackNum (String n) = let parsed = reads n :: [(Integer, String)] in 
-    if null parsed then 0 else fst $ head parsed
+unpackNum :: LispVal -> ThrowsError Integer
+unpackNum (Number (Int n)) = return n
+unpackNum (Number (Real n)) = return $ round n
+unpackNum (String n) = 
+    let parsed = reads n :: [(Integer, String)] in 
+        if null parsed 
+            then throwError $ TypeMismatch "number" $ String n 
+            else return $ fst $ head parsed
 unpackNum (List [n]) = unpackNum n
-unpackNum _ = 0
+unpackNum notNum = throwError $ TypeMismatch "number" notNum
 
-unaryOp :: (LispVal -> LispVal) -> [LispVal] -> LispVal
-unaryOp f [v] = f v
+unaryOp :: (LispVal -> LispVal) -> [LispVal] -> ThrowsError LispVal
+unaryOp f [v] = return $ f v
 
 symbolp, numberp, stringp, boolp, listp :: LispVal -> LispVal
 symbolp (Atom _)   = Bool True

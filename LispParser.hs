@@ -4,8 +4,9 @@ import qualified Text.ParserCombinators.Parsec as P
 import Text.ParserCombinators.Parsec ((<|>))
 import Numeric
 import Data.Array
+import Control.Monad.Except
 
-import LispData
+import LispTypes
 
 parseSymbol :: P.Parser Char
 parseSymbol = P.oneOf "!$%&|*+-/:<=>?@^_~"
@@ -137,7 +138,7 @@ parseExpr =
     <|> parseAnyList
     <|> parseVector
 
-readExpr :: String -> LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case P.parse parseExpr "lisp" input of
-    Left err -> LispData.String $ "No match: " ++ show err
-    Right val -> val
+    Left err -> throwError $ Parser err
+    Right val -> return val
