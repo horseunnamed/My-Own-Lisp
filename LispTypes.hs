@@ -17,6 +17,7 @@ data LispVal
 data LispNumber
     = Int Integer
     | Real Double
+    deriving Eq
 
 data LispError
     = NumArgs Integer [LispVal]
